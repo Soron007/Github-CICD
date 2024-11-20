@@ -12,26 +12,38 @@ jobs:
         runs-on: ubuntu-latest
         environment: production
 
+        env:
+            ACTIONS_STEP_DEBUG: true  # Enable debug logging
+
         steps:
 
-            - name: "Setup nodejs"
+            - name: "Setup Node.js"
               uses: actions/setup-node@v4
               with:
                 node-version: '21'
 
-            - name: "Setup vercel cli"
+            - name: "Setup Vercel CLI"
               run: npm install -g vercel
 
-            - name: "Download build files"
+            - name: "Verify VERCEL_TOKEN"
+              run: |
+                if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+                  echo "VERCEL_TOKEN is not set!"
+                  exit 1
+                else
+                  echo "::add-mask::${{ secrets.VERCEL_TOKEN }}"  # Mask the token in logs
+                  echo "VERCEL_TOKEN is set and valid."
+                fi
+
+            - name: "Debug Vercel Command"
+              run: "echo 'Running: vercel --prod --confirm --name=cicdproject'"
+
+            - name: "Download Build Files"
               uses: actions/download-artifact@v4
               with:
                 name: build
                 run-id: ${{ github.event.workflow_run.id }}
-                github-token: ${{ github.token }}
-            
-            - name: "Deploy to vercel"
+                github-token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: "Deploy to Vercel"
               run: vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --confirm --name=cicdproject
-
-
-
-            
